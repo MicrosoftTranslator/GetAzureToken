@@ -14,6 +14,7 @@ namespace Microsoft.Translator.Api
         private TimeSpan tokenLifeTime = new TimeSpan(0, 5, 0); //set token lifetime to 5 minutes
         private static string storedTokenValue = string.Empty;
         private static DateTime storedTokenTime = DateTime.MinValue;
+        public static string subscriptionKey { get; set; } = string.Empty;
 
         public Uri ServiceUrl { get; private set; }
 
@@ -21,10 +22,10 @@ namespace Microsoft.Translator.Api
         /// Creates a client to obtain an access token.
         /// </summary>
         /// <param name="serviceUrl">URL of the service to target.</param>
-        public AzureAuthTokenSource()
+        public AzureAuthTokenSource(string Key)
         {
             if (string.IsNullOrWhiteSpace(serviceUrl)) throw new ArgumentNullException(nameof(serviceUrl));
-
+            subscriptionKey = Key;
             Uri actualUri;
             if (!Uri.TryCreate(serviceUrl, UriKind.Absolute, out actualUri))
             {                
@@ -38,7 +39,7 @@ namespace Microsoft.Translator.Api
         /// </summary>
         /// <param name="subscriptionKey">Subscription secret key.</param>
         /// <returns>The encoded JWT token. If less that 5 minutes have elapsed since last request, the previous token is returned.</returns>
-        public async Task<string> GetAccessTokenAsync(string subscriptionKey)
+        public async Task<string> GetAccessTokenAsync()
         {
             if ((DateTime.Now - storedTokenTime) < tokenLifeTime ) return storedTokenValue;
             using (var client = new HttpClient())

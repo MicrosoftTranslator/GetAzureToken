@@ -10,19 +10,19 @@ namespace CSharp_TranslateSample
     class Program
     {
 
-        const string subscriptionKey = "Subscription Key from http://portal.azure.com";   //Enter here the Key from your Microsoft Translator subscription.
+        const string subscriptionKey = "your subscription key";   //Enter here the Key from your Microsoft Translator Text subscription on http://portal.azure.com
 
         static void Main(string[] args)
         {
             TranslatorService.LanguageServiceClient translatorService = new TranslatorService.LanguageServiceClient();
 
             //An example of how to call the methods to get a token
-            AzureAuthTokenSource authTokenSource = new AzureAuthTokenSource();
+            AzureAuthTokenSource authTokenSource = new AzureAuthTokenSource(subscriptionKey);
             string token = string.Empty;
 
             try
             {
-                token = authTokenSource.GetAccessTokenAsync(subscriptionKey).GetAwaiter().GetResult();
+                token = authTokenSource.GetAccessTokenAsync().GetAwaiter().GetResult();
             }
             catch
             {
