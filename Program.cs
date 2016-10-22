@@ -10,7 +10,7 @@ namespace CSharp_TranslateSample
     class Program
     {
 
-        const string subscriptionKey = "21c8b1995c444ec0ad246f0eb440aa9d";
+        const string subscriptionKey = "Subscription Key from http://portal.azure.com";   //Enter here the Key from your Microsoft Translator subscription.
 
         static void Main(string[] args)
         {
