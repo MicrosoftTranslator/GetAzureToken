@@ -11,6 +11,9 @@ namespace Microsoft.Translator.Api
     {
         private const string serviceUrl = "https://api.cognitive.microsoft.com/sts/v1.0/issueToken";
         private const string OcpApimSubscriptionKeyHeader = "Ocp-Apim-Subscription-Key";
+        private TimeSpan tokenLifeTime = new TimeSpan(0, 5, 0); //set token lifetime to 5 minutes
+        private static string storedTokenValue = string.Empty;
+        private static DateTime storedTokenTime = DateTime.MinValue;
 
         public Uri ServiceUrl { get; private set; }
 
@@ -30,13 +33,14 @@ namespace Microsoft.Translator.Api
             this.ServiceUrl = new Uri(serviceUrl);
         }
 
-                /// <summary>
-        /// Gets a token for the specified subscription.
+        /// <summary>
+        /// Gets a token for the specified subscription. Returned token is valid for 5 minutes.
         /// </summary>
         /// <param name="subscriptionKey">Subscription secret key.</param>
-        /// <returns>The encoded JWT token.</returns>
+        /// <returns>The encoded JWT token. If less that 5 minutes have elapsed since last request, the previous token is returned.</returns>
         public async Task<string> GetAccessTokenAsync(string subscriptionKey)
         {
+            if ((DateTime.Now - storedTokenTime) < tokenLifeTime ) return storedTokenValue;
             using (var client = new HttpClient())
             using (var request = new HttpRequestMessage())
             {
@@ -47,7 +51,9 @@ namespace Microsoft.Translator.Api
                 var response = await client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 var token = await response.Content.ReadAsStringAsync();
-                return "Bearer "+ token;
+                storedTokenTime = DateTime.Now;
+                storedTokenValue = "Bearer " + token;
+                return "Bearer " + token;
             }
         }
     }
