@@ -1,37 +1,47 @@
-﻿using Microsoft.Translator.Api;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace CSharp_TranslateSample
 {
     class Program
     {
-
-        const string subscriptionKey = "your subscription key";   //Enter here the Key from your Microsoft Translator Text subscription on http://portal.azure.com
+        private const string SubscriptionKey = "your subscription key";   //Enter here the Key from your Microsoft Translator Text subscription on http://portal.azure.com
 
         static void Main(string[] args)
         {
-            TranslatorService.LanguageServiceClient translatorService = new TranslatorService.LanguageServiceClient();
+            TranslateAsync().Wait();
+            Console.ReadKey();
+        }
 
-            //An example of how to call the methods to get a token
-            AzureAuthTokenSource authTokenSource = new AzureAuthTokenSource(subscriptionKey);
-            string token = string.Empty;
+        /// Demonstrates getting an access token and using the token to translate.
+        private static async Task TranslateAsync()
+        {
+            var translatorService = new TranslatorService.LanguageServiceClient();
+            var authTokenSource = new AzureAuthToken(SubscriptionKey);
+            var token = string.Empty;
 
             try
             {
-                token = authTokenSource.GetAccessTokenAsync().GetAwaiter().GetResult();
+                token = await authTokenSource.GetAccessTokenAsync();
             }
-            catch
+            catch (HttpRequestException)
             {
-                throw new Exception("Invalid Azure subscription key");
+                switch (authTokenSource.RequestStatusCode)
+                {
+                    case HttpStatusCode.Unauthorized:
+                        Console.WriteLine("Request to token service is not authorized (401). Check that the Azure subscription key is valid.");
+                        break;
+                    case HttpStatusCode.Forbidden:
+                        Console.WriteLine("Request to token service is not authorized (403). For accounts in the free-tier, check that the account quota is not exceeded.");
+                        break;
+                }
+                throw;
             }
-
 
             Console.WriteLine("Translated to French: {0}", translatorService.Translate(token, "Hello World", "en", "fr", "text/plain", "general", string.Empty));
-            Console.ReadKey();
         }
+
     }
 }
