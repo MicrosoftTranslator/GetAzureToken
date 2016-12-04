@@ -7,6 +7,7 @@ namespace CSharp_TranslateSample
 {
     /// <summary>
     /// Client to call Cognitive Services Azure Auth Token service in order to get an access token.
+    /// Exposes asynchronous as well as synchronous methods.
     /// </summary>
     public class AzureAuthToken
     {
@@ -79,5 +80,36 @@ namespace CSharp_TranslateSample
                 return storedTokenValue;
             }
         }
+
+        private void GetAccessToken(ref string AccessToken)
+        {
+            // Re-use the cached token if there is one.
+            if ((DateTime.Now - storedTokenTime) < TokenCacheDuration)
+            {
+                AccessToken = storedTokenValue;
+                return;
+            }
+            GetAccessTokenAsync().Wait();
+            AccessToken = storedTokenValue;
+        }
+
+        /// <summary>
+        /// Gets a token for the specified subscription.
+        /// </summary>
+        /// <returns>The encoded JWT token prefixed with the string "Bearer ".</returns>
+        /// <remarks>
+        /// This method uses a cache to limit the number of request to the token service.
+        /// A fresh token can be re-used during its lifetime of 10 minutes. After a successful
+        /// request to the token service, this method caches the access token. Subsequent 
+        /// invocations of the method return the cached token for the next 5 minutes. After
+        /// 5 minutes, a new token is fetched from the token service and the cache is updated.
+        /// </remarks>
+        public string GetAccessToken()
+        {
+            string AccessToken = string.Empty;
+            GetAccessToken(ref AccessToken);
+            return AccessToken;
+        }
+
     }
 }
