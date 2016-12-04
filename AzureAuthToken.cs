@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace CSharp_TranslateSample
+namespace Microsoft.Translator.API
 {
     /// <summary>
     /// Client to call Cognitive Services Azure Auth Token service in order to get an access token.
@@ -25,7 +25,7 @@ namespace CSharp_TranslateSample
         private DateTime storedTokenTime = DateTime.MinValue;
 
         /// Gets the subscription key.
-        public string SubscriptionKey { get; private set; }
+        public string SubscriptionKey { get; private set; } = string.Empty;
 
         /// Gets the HTTP status code for the most recent request to the token service.
         public HttpStatusCode RequestStatusCode { get; private set; }
@@ -58,6 +58,8 @@ namespace CSharp_TranslateSample
         /// </remarks>
         public async Task<string> GetAccessTokenAsync()
         {
+            if (SubscriptionKey == string.Empty) return string.Empty;
+
             // Re-use the cached token if there is one.
             if ((DateTime.Now - storedTokenTime) < TokenCacheDuration)
             {
@@ -71,6 +73,7 @@ namespace CSharp_TranslateSample
                 request.RequestUri = ServiceUrl;
                 request.Content = new StringContent(string.Empty);
                 request.Headers.TryAddWithoutValidation(OcpApimSubscriptionKeyHeader, this.SubscriptionKey);
+                client.Timeout = TimeSpan.FromSeconds(2);
                 var response = await client.SendAsync(request);
                 this.RequestStatusCode = response.StatusCode;
                 response.EnsureSuccessStatusCode();
@@ -81,20 +84,9 @@ namespace CSharp_TranslateSample
             }
         }
 
-        private void GetAccessToken(ref string AccessToken)
-        {
-            // Re-use the cached token if there is one.
-            if ((DateTime.Now - storedTokenTime) < TokenCacheDuration)
-            {
-                AccessToken = storedTokenValue;
-                return;
-            }
-            GetAccessTokenAsync().Wait();
-            AccessToken = storedTokenValue;
-        }
-
         /// <summary>
-        /// Gets a token for the specified subscription.
+        /// Gets a token for the specified subscription. Synchronous version.
+        /// Use of async version preferred
         /// </summary>
         /// <returns>The encoded JWT token prefixed with the string "Bearer ".</returns>
         /// <remarks>
@@ -106,9 +98,31 @@ namespace CSharp_TranslateSample
         /// </remarks>
         public string GetAccessToken()
         {
-            string AccessToken = string.Empty;
-            GetAccessToken(ref AccessToken);
-            return AccessToken;
+            // Re-use the cached token if there is one.
+            if ((DateTime.Now - storedTokenTime) < TokenCacheDuration)
+            {
+                return storedTokenValue;
+            }
+
+            string accessToken = null;
+            var task = Task.Run(async () =>
+            {
+                accessToken = await GetAccessTokenAsync();
+            });
+
+            while (!task.IsCompleted)
+            {
+                System.Threading.Thread.Yield();
+            }
+            if (task.IsFaulted)
+            {
+                throw task.Exception;
+            }
+            else if (task.IsCanceled)
+            {
+                throw new Exception("Timeout obtaining access token.");
+            }
+            return accessToken;
         }
 
     }
