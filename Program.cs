@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Translator.API;
 
 namespace CSharp_TranslateSample
 {
@@ -42,6 +43,5 @@ namespace CSharp_TranslateSample
 
             Console.WriteLine("Translated to French: {0}", translatorService.Translate(token, "Hello World", "en", "fr", "text/plain", "general", string.Empty));
         }
-
     }
 }
